@@ -1,0 +1,1861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Stock Market Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@2.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #1a1a2e;
+            --secondary-color: #16213e;
+            --accent-color: #0f3460;
+            --success-color: #00d4aa;
+            --danger-color: #ff6b6b;
+            --warning-color: #feca57;
+            --info-color: #48cae4;
+            --light-bg: #f8f9fa;
+            --dark-bg: #0d1117;
+            --text-primary: #ffffff;
+            --text-secondary: #8b949e;
+            --border-color: #30363d;
+            --card-bg: #161b22;
+            --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-success: linear-gradient(135deg, #00d4aa 0%, #00a085 100%);
+            --gradient-danger: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+            --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
+            --shadow-xl: 0 20px 25px rgba(0,0,0,0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--dark-bg);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .dashboard {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0d1117 0%, #161b22 50%, #21262d 100%);
+        }
+
+        .header {
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo i {
+            font-size: 1.5rem;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .logo h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .connection-status.connected {
+            background: rgba(0, 212, 170, 0.1);
+            color: var(--success-color);
+            border: 1px solid rgba(0, 212, 170, 0.3);
+        }
+
+        .connection-status.disconnected {
+            background: rgba(255, 107, 107, 0.1);
+            color: var(--danger-color);
+            border: 1px solid rgba(255, 107, 107, 0.3);
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .connected .status-indicator {
+            background: var(--success-color);
+        }
+
+        .disconnected .status-indicator {
+            background: var(--danger-color);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .main-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: grid;
+            gap: 2rem;
+        }
+
+        .controls-section {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--gradient-primary);
+            color: white;
+        }
+
+        .btn-success {
+            background: var(--gradient-success);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--gradient-danger);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-xl);
+            border-color: rgba(102, 126, 234, 0.3);
+        }
+
+        .metric-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .metric-title {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .metric-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-change {
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .metric-change.positive {
+            color: var(--success-color);
+        }
+
+        .metric-change.negative {
+            color: var(--danger-color);
+        }
+
+        /* Stocks Section */
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: var(--text-primary);
+        }
+
+        .stocks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stock-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stock-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--gradient-primary);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .stock-card.updated::before {
+            opacity: 1;
+            animation: flash 0.5s ease;
+        }
+
+        .stock-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-xl);
+            border-color: rgba(102, 126, 234, 0.3);
+        }
+
+        .stock-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .stock-symbol {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .stock-trend {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .stock-trend.up {
+            background: rgba(0, 212, 170, 0.1);
+            color: var(--success-color);
+        }
+
+        .stock-trend.down {
+            background: rgba(255, 107, 107, 0.1);
+            color: var(--danger-color);
+        }
+
+        .stock-trend.neutral {
+            background: rgba(139, 148, 158, 0.1);
+            color: var(--text-secondary);
+        }
+
+        .stock-price {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            transition: color 0.3s ease;
+        }
+
+        .stock-price.up {
+            color: var(--success-color);
+        }
+
+        .stock-price.down {
+            color: var(--danger-color);
+        }
+
+        .stock-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .stock-detail {
+            text-align: center;
+        }
+
+        .stock-detail-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stock-detail-value {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-top: 0.25rem;
+        }
+
+        .stock-change {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .stock-change.positive {
+            color: var(--success-color);
+        }
+
+        .stock-change.negative {
+            color: var(--danger-color);
+        }
+
+        /* Charts Section */
+        .charts-section {
+            margin: 2rem 0;
+        }
+
+        .chart-container {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .chart-header h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .chart-controls select {
+            background: var(--accent-color);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+
+        #priceChart {
+            max-height: 400px;
+        }
+
+        /* Activity Log */
+        .activity-section {
+            margin: 2rem 0;
+        }
+
+        .activity-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .activity-header h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .activity-log {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            transition: all 0.3s ease;
+        }
+
+        .activity-log.hidden {
+            display: none;
+        }
+
+        .log-placeholder {
+            padding: 2rem;
+            text-align: center;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .log-entry {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.875rem;
+            transition: background-color 0.3s ease;
+        }
+
+        .log-entry:hover {
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        .log-timestamp {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+        }
+
+        .log-type {
+            display: inline-block;
+            padding: 0.125rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin: 0 0.5rem;
+        }
+
+        .log-type.data {
+            background: rgba(72, 202, 228, 0.1);
+            color: var(--info-color);
+        }
+
+        .log-type.system {
+            background: rgba(0, 212, 170, 0.1);
+            color: var(--success-color);
+        }
+
+        .log-type.error {
+            background: rgba(255, 107, 107, 0.1);
+            color: var(--danger-color);
+        }
+
+        /* Animations */
+        @keyframes flash {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes priceFlashUp {
+            0% {
+                background: var(--card-bg);
+                transform: scale(1);
+            }
+            50% {
+                background: rgba(0, 212, 170, 0.2);
+                transform: scale(1.02);
+            }
+            100% {
+                background: var(--card-bg);
+                transform: scale(1);
+            }
+        }
+
+        @keyframes priceFlashDown {
+            0% {
+                background: var(--card-bg);
+                transform: scale(1);
+            }
+            50% {
+                background: rgba(255, 107, 107, 0.2);
+                transform: scale(1.02);
+            }
+            100% {
+                background: var(--card-bg);
+                transform: scale(1);
+            }
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% {
+                box-shadow: 0 0 5px rgba(102, 126, 234, 0.3);
+            }
+            50% {
+                box-shadow: 0 0 20px rgba(102, 126, 234, 0.6);
+            }
+        }
+
+        .slide-in {
+            animation: slideIn 0.3s ease;
+        }
+
+        .price-flash-up {
+            animation: priceFlashUp 1s ease-out;
+        }
+
+        .price-flash-down {
+            animation: priceFlashDown 1s ease-out;
+        }
+
+        .chart-container.live {
+            animation: pulseGlow 2s infinite;
+        }
+
+        /* Enhanced chart styling */
+        .chart-container {
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .chart-container::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg,
+                rgba(0, 212, 170, 0.3),
+                rgba(72, 202, 228, 0.3),
+                rgba(254, 202, 87, 0.3),
+                rgba(255, 107, 107, 0.3),
+                rgba(102, 126, 234, 0.3)
+            );
+            border-radius: 14px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: -1;
+        }
+
+        .chart-container.live::before {
+            opacity: 1;
+        }
+
+        /* Real-time indicator */
+        .chart-live-indicator {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(0, 212, 170, 0.1);
+            color: var(--success-color);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            z-index: 10;
+        }
+
+        .chart-live-indicator .live-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--success-color);
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 1rem;
+            }
+
+            .header-content {
+                padding: 0 1rem;
+            }
+
+            .controls-section {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .btn {
+                justify-content: center;
+            }
+
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stocks-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .chart-header {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: stretch;
+            }
+
+            .activity-header {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: stretch;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .logo h1 {
+                font-size: 1.25rem;
+            }
+
+            .metric-value {
+                font-size: 1.5rem;
+            }
+
+            .stock-price {
+                font-size: 1.5rem;
+            }
+        }
+
+        /* Dark theme toggle */
+        .theme-light {
+            --dark-bg: #ffffff;
+            --card-bg: #ffffff;
+            --text-primary: #1a1a2e;
+            --text-secondary: #6c757d;
+            --border-color: #e9ecef;
+        }
+
+        .theme-light .dashboard {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 50%, #dee2e6 100%);
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-chart-line"></i>
+                    <h1>Real-Time Stock Market Dashboard</h1>
+                </div>
+                <div id="connectionStatus" class="connection-status disconnected">
+                    <div class="status-indicator"></div>
+                    <span id="statusText">Disconnected</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Controls -->
+            <section class="controls-section">
+                <button id="connectBtn" class="btn btn-success" onclick="connect()">
+                    <i class="fas fa-plug"></i>
+                    Connect
+                </button>
+                <button id="disconnectBtn" class="btn btn-danger" onclick="disconnect()" disabled>
+                    <i class="fas fa-unlink"></i>
+                    Disconnect
+                </button>
+                <button class="btn btn-primary" onclick="clearMessages()">
+                    <i class="fas fa-trash"></i>
+                    Clear Data
+                </button>
+                <button class="btn btn-primary" onclick="toggleTheme()">
+                    <i class="fas fa-moon"></i>
+                    Theme
+                </button>
+            </section>
+
+            <!-- Performance Metrics -->
+            <section class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-title">Messages Received</span>
+                        <div class="metric-icon" style="background: rgba(72, 202, 228, 0.1); color: var(--info-color);">
+                            <i class="fas fa-envelope"></i>
+                        </div>
+                    </div>
+                    <div id="messageCount" class="metric-value">0</div>
+                    <div class="metric-change">
+                        <i class="fas fa-arrow-up"></i>
+                        <span id="messageRate">0/sec</span>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-title">Connection Time</span>
+                        <div class="metric-icon" style="background: rgba(0, 212, 170, 0.1); color: var(--success-color);">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                    </div>
+                    <div id="connectionTime" class="metric-value">--</div>
+                    <div class="metric-change">
+                        <i class="fas fa-wifi"></i>
+                        <span>Live Connection</span>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-title">Last Update</span>
+                        <div class="metric-icon" style="background: rgba(254, 202, 87, 0.1); color: var(--warning-color);">
+                            <i class="fas fa-sync"></i>
+                        </div>
+                    </div>
+                    <div id="lastMessage" class="metric-value">--</div>
+                    <div class="metric-change">
+                        <i class="fas fa-heartbeat"></i>
+                        <span id="latency">0ms</span>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-title">Active Stocks</span>
+                        <div class="metric-icon" style="background: rgba(102, 126, 234, 0.1); color: #667eea;">
+                            <i class="fas fa-chart-bar"></i>
+                        </div>
+                    </div>
+                    <div id="activeStocks" class="metric-value">0</div>
+                    <div class="metric-change">
+                        <i class="fas fa-trending-up"></i>
+                        <span>Tracking</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Stock Cards Grid -->
+            <section class="stocks-section">
+                <h2 class="section-title">
+                    <i class="fas fa-chart-line"></i>
+                    Live Stock Prices
+                </h2>
+                <div id="stocksGrid" class="stocks-grid">
+                    <!-- Stock cards will be dynamically generated -->
+                </div>
+            </section>
+
+            <!-- Charts Section -->
+            <section class="charts-section">
+                <div class="chart-container live" id="chartContainer">
+                    <div class="chart-live-indicator" id="chartLiveIndicator">
+                        <div class="live-dot"></div>
+                        <span>LIVE</span>
+                    </div>
+                    <div class="chart-header">
+                        <h3>
+                            <i class="fas fa-chart-line"></i>
+                            Real-Time Price Trends
+                        </h3>
+                        <div class="chart-controls">
+                            <select id="chartTimeframe" onchange="updateChartTimeframe()">
+                                <option value="1m">1 Minute</option>
+                                <option value="5m" selected>5 Minutes</option>
+                                <option value="15m">15 Minutes</option>
+                                <option value="30m">30 Minutes</option>
+                                <option value="1h">1 Hour</option>
+                            </select>
+                            <button class="btn btn-primary" onclick="pauseResumeChart()" id="pauseResumeBtn">
+                                <i class="fas fa-pause"></i>
+                                Pause
+                            </button>
+                            <button class="btn btn-primary" onclick="resetChartZoom()">
+                                <i class="fas fa-expand-arrows-alt"></i>
+                                Reset Zoom
+                            </button>
+                            <button class="btn btn-primary" onclick="toggleHighFrequencyMode()" id="highFreqBtn">
+                                <i class="fas fa-tachometer-alt"></i>
+                                High Freq
+                            </button>
+                        </div>
+                    </div>
+                    <canvas id="priceChart"></canvas>
+                </div>
+            </section>
+
+            <!-- Activity Log -->
+            <section class="activity-section">
+                <div class="activity-header">
+                    <h3>
+                        <i class="fas fa-list"></i>
+                        Activity Log
+                    </h3>
+                    <div class="activity-controls">
+                        <button class="btn btn-primary" onclick="toggleActivityLog()">
+                            <i class="fas fa-eye"></i>
+                            <span id="logToggleText">Show</span>
+                        </button>
+                    </div>
+                </div>
+                <div id="activityLog" class="activity-log hidden">
+                    <div class="log-placeholder">
+                        <i class="fas fa-info-circle"></i>
+                        Connect to start receiving live data...
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script>
+        // Global variables
+        let socket = null;
+        let messageCount = 0;
+        let connectTime = null;
+        let connectionTimer = null;
+        let messageRateTimer = null;
+        let lastMessageTime = 0;
+        let messageRate = 0;
+        let stockData = {};
+        let priceChart = null;
+        let chartData = {};
+        let activityLogVisible = false;
+        let isDarkTheme = true;
+
+        // Stock symbols to track
+        const STOCK_SYMBOLS = ['AAPL', 'GOOGL', 'AMZN', 'TSLA', 'MSFT'];
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeStockCards();
+            initializePriceChart();
+            startMessageRateCalculation();
+            startPerformanceMonitoring();
+
+            // Auto-connect after 1 second
+            setTimeout(connect, 1000);
+        });
+
+        function startPerformanceMonitoring() {
+            // Monitor chart performance
+            let frameCount = 0;
+            let lastTime = performance.now();
+
+            function measureFPS() {
+                frameCount++;
+                const currentTime = performance.now();
+
+                if (currentTime - lastTime >= 1000) {
+                    const fps = Math.round((frameCount * 1000) / (currentTime - lastTime));
+
+                    // Log performance if FPS drops below 30
+                    if (fps < 30 && !chartPaused) {
+                        console.warn(`Chart performance warning: ${fps} FPS`);
+
+                        // Auto-optimize if performance is poor
+                        if (fps < 15) {
+                            optimizeChartForHighFrequency();
+                            addLogEntry(`Auto-optimized chart for performance (${fps} FPS)`, 'system');
+                        }
+                    }
+
+                    frameCount = 0;
+                    lastTime = currentTime;
+                }
+
+                requestAnimationFrame(measureFPS);
+            }
+
+            requestAnimationFrame(measureFPS);
+        }
+
+        function connect() {
+            if (socket && socket.connected) {
+                return;
+            }
+
+            addLogEntry('Attempting to connect to WebSocket server...', 'system');
+            socket = io('http://localhost:8080');
+
+            socket.on('connect', function() {
+                console.log('Connected to Socket.IO server');
+                updateConnectionStatus(true);
+                document.getElementById('connectBtn').disabled = true;
+                document.getElementById('disconnectBtn').disabled = false;
+                connectTime = new Date();
+                startConnectionTimer();
+                addLogEntry('Connected to Kafka stream successfully', 'system');
+
+                // Subscribe to stock updates
+                socket.emit('subscribe', STOCK_SYMBOLS);
+                addLogEntry(`Subscribed to stocks: ${STOCK_SYMBOLS.join(', ')}`, 'system');
+            });
+
+            socket.on('stock-tick', function(data) {
+                handleStockTick(data);
+            });
+
+            socket.on('metrics', function(data) {
+                addLogEntry(`Server metrics: ${JSON.stringify(data)}`, 'system');
+            });
+
+            socket.on('disconnect', function() {
+                console.log('Disconnected from Socket.IO server');
+                updateConnectionStatus(false);
+                document.getElementById('connectBtn').disabled = false;
+                document.getElementById('disconnectBtn').disabled = true;
+                stopConnectionTimer();
+                addLogEntry('Disconnected from stream', 'system');
+            });
+
+            socket.on('connect_error', function(error) {
+                console.error('Socket.IO connection error:', error);
+                addLogEntry(`Connection error: ${error.message}`, 'error');
+                updateConnectionStatus(false);
+            });
+        }
+
+        function disconnect() {
+            if (socket) {
+                socket.disconnect();
+                addLogEntry('Manual disconnect requested', 'system');
+            }
+        }
+
+        function handleStockTick(data) {
+            messageCount++;
+            lastMessageTime = Date.now();
+
+            // Update stock data
+            const symbol = data.symbol;
+            const previousPrice = stockData[symbol] ? stockData[symbol].price : data.price;
+
+            stockData[symbol] = {
+                ...data,
+                previousPrice: previousPrice,
+                trend: data.price > previousPrice ? 'up' : data.price < previousPrice ? 'down' : 'neutral',
+                lastUpdate: new Date()
+            };
+
+            // Update UI with optimized chart updates
+            updateStockCard(symbol, stockData[symbol]);
+            addChartDataPoint(symbol, data.price, new Date(data.timestamp));
+            updateMetrics();
+
+            // Add to activity log
+            const changePercent = previousPrice ? (((data.price - previousPrice) / previousPrice) * 100).toFixed(2) : '0.00';
+            addLogEntry(`${symbol}: $${data.price} (${changePercent > 0 ? '+' : ''}${changePercent}%) Vol: ${data.volume}`, 'data');
+
+            // Trigger visual feedback for price change
+            triggerPriceChangeAnimation(symbol, data.price > previousPrice ? 'up' : data.price < previousPrice ? 'down' : 'neutral');
+        }
+
+        function triggerPriceChangeAnimation(symbol, direction) {
+            // Add visual feedback to stock card
+            const card = document.getElementById(`stock-${symbol}`);
+            if (card) {
+                card.classList.remove('price-flash-up', 'price-flash-down');
+
+                if (direction === 'up') {
+                    card.classList.add('price-flash-up');
+                } else if (direction === 'down') {
+                    card.classList.add('price-flash-down');
+                }
+
+                // Remove animation class after animation completes
+                setTimeout(() => {
+                    card.classList.remove('price-flash-up', 'price-flash-down');
+                }, 1000);
+            }
+        }
+
+        function updateConnectionStatus(connected) {
+            const statusEl = document.getElementById('connectionStatus');
+            const statusText = document.getElementById('statusText');
+
+            if (connected) {
+                statusEl.className = 'connection-status connected';
+                statusText.textContent = 'Connected';
+            } else {
+                statusEl.className = 'connection-status disconnected';
+                statusText.textContent = 'Disconnected';
+            }
+        }
+
+        function initializeStockCards() {
+            const stocksGrid = document.getElementById('stocksGrid');
+            stocksGrid.innerHTML = '';
+
+            STOCK_SYMBOLS.forEach(symbol => {
+                const stockCard = createStockCard(symbol);
+                stocksGrid.appendChild(stockCard);
+            });
+
+            updateActiveStocksCount();
+        }
+
+        function createStockCard(symbol) {
+            const card = document.createElement('div');
+            card.className = 'stock-card';
+            card.id = `stock-${symbol}`;
+
+            card.innerHTML = `
+                <div class="stock-header">
+                    <div class="stock-symbol">${symbol}</div>
+                    <div class="stock-trend neutral" id="${symbol}-trend">--</div>
+                </div>
+                <div class="stock-price" id="${symbol}-price">$--</div>
+                <div class="stock-change" id="${symbol}-change">
+                    <i class="fas fa-minus"></i>
+                    <span>No data</span>
+                </div>
+                <div class="stock-details">
+                    <div class="stock-detail">
+                        <div class="stock-detail-label">Volume</div>
+                        <div class="stock-detail-value" id="${symbol}-volume">--</div>
+                    </div>
+                    <div class="stock-detail">
+                        <div class="stock-detail-label">Last Update</div>
+                        <div class="stock-detail-value" id="${symbol}-time">--</div>
+                    </div>
+                </div>
+            `;
+
+            return card;
+        }
+
+        function updateStockCard(symbol, data) {
+            const card = document.getElementById(`stock-${symbol}`);
+            if (!card) return;
+
+            // Add update animation
+            card.classList.add('updated');
+            setTimeout(() => card.classList.remove('updated'), 500);
+
+            // Update price
+            const priceEl = document.getElementById(`${symbol}-price`);
+            priceEl.textContent = `$${data.price.toFixed(2)}`;
+            priceEl.className = `stock-price ${data.trend}`;
+
+            // Update trend indicator
+            const trendEl = document.getElementById(`${symbol}-trend`);
+            trendEl.textContent = data.trend.toUpperCase();
+            trendEl.className = `stock-trend ${data.trend}`;
+
+            // Update change
+            const changeEl = document.getElementById(`${symbol}-change`);
+            const changePercent = data.previousPrice ?
+                (((data.price - data.previousPrice) / data.previousPrice) * 100).toFixed(2) : '0.00';
+            const changeAmount = data.previousPrice ? (data.price - data.previousPrice).toFixed(2) : '0.00';
+
+            const isPositive = parseFloat(changePercent) > 0;
+            const isNegative = parseFloat(changePercent) < 0;
+
+            changeEl.className = `stock-change ${isPositive ? 'positive' : isNegative ? 'negative' : ''}`;
+            changeEl.innerHTML = `
+                <i class="fas fa-${isPositive ? 'arrow-up' : isNegative ? 'arrow-down' : 'minus'}"></i>
+                <span>${isPositive ? '+' : ''}${changePercent}% (${isPositive ? '+' : ''}$${changeAmount})</span>
+            `;
+
+            // Update volume
+            document.getElementById(`${symbol}-volume`).textContent = data.volume.toLocaleString();
+
+            // Update time
+            document.getElementById(`${symbol}-time`).textContent =
+                new Date(data.timestamp).toLocaleTimeString();
+        }
+
+        function initializePriceChart() {
+            const ctx = document.getElementById('priceChart').getContext('2d');
+
+            // Chart configuration for real-time streaming
+            const chartConfig = {
+                type: 'line',
+                data: {
+                    datasets: STOCK_SYMBOLS.map((symbol, index) => ({
+                        label: symbol,
+                        data: [],
+                        borderColor: getStockColor(symbol),
+                        backgroundColor: getStockColor(symbol, 0.1),
+                        borderWidth: 3,
+                        fill: false,
+                        tension: 0.1, // Reduced for more precise lines
+                        pointRadius: 0,
+                        pointHoverRadius: 6,
+                        pointBackgroundColor: getStockColor(symbol),
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        segment: {
+                            borderColor: ctx => {
+                                // Dynamic color based on price movement
+                                const current = ctx.p1.parsed.y;
+                                const previous = ctx.p0.parsed.y;
+                                return current >= previous ?
+                                    getStockColor(symbol) :
+                                    getStockColor(symbol, 1, true);
+                            }
+                        }
+                    }))
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: {
+                        duration: 750, // Smooth animation duration
+                        easing: 'easeInOutQuart'
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                color: '#ffffff',
+                                usePointStyle: true,
+                                pointStyle: 'circle',
+                                padding: 20,
+                                font: {
+                                    size: 12,
+                                    weight: '500'
+                                }
+                            }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: 'rgba(22, 27, 34, 0.95)',
+                            titleColor: '#ffffff',
+                            bodyColor: '#ffffff',
+                            borderColor: '#30363d',
+                            borderWidth: 1,
+                            cornerRadius: 8,
+                            displayColors: true,
+                            callbacks: {
+                                title: function(context) {
+                                    const date = new Date(context[0].parsed.x);
+                                    return date.toLocaleTimeString();
+                                },
+                                label: function(context) {
+                                    const symbol = context.dataset.label;
+                                    const price = context.parsed.y;
+                                    const change = getLatestPriceChange(symbol);
+                                    return `${symbol}: $${price.toFixed(2)} (${change})`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                unit: 'minute',
+                                stepSize: 1,
+                                displayFormats: {
+                                    minute: 'HH:mm:ss'
+                                }
+                            },
+                            ticks: {
+                                color: '#8b949e',
+                                font: {
+                                    size: 11
+                                },
+                                maxTicksLimit: 10
+                            },
+                            grid: {
+                                color: '#30363d',
+                                lineWidth: 1
+                            },
+                            title: {
+                                display: true,
+                                text: 'Time',
+                                color: '#8b949e',
+                                font: {
+                                    size: 12,
+                                    weight: '500'
+                                }
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            position: 'left',
+                            beginAtZero: false,
+                            ticks: {
+                                color: '#8b949e',
+                                font: {
+                                    size: 11
+                                },
+                                callback: function(value) {
+                                    return '$' + value.toFixed(2);
+                                },
+                                maxTicksLimit: 8
+                            },
+                            grid: {
+                                color: '#30363d',
+                                lineWidth: 1
+                            },
+                            title: {
+                                display: true,
+                                text: 'Price (USD)',
+                                color: '#8b949e',
+                                font: {
+                                    size: 12,
+                                    weight: '500'
+                                }
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
+                    elements: {
+                        point: {
+                            hoverRadius: 8
+                        }
+                    }
+                }
+            };
+
+            priceChart = new Chart(ctx, chartConfig);
+
+            // Initialize chart data storage with performance optimization
+            STOCK_SYMBOLS.forEach(symbol => {
+                chartData[symbol] = [];
+            });
+
+            // Start real-time chart updates
+            startRealtimeChart();
+        }
+
+        function getStockColor(symbol, alpha = 1, isNegative = false) {
+            const colors = {
+                'AAPL': isNegative ? `rgba(255, 107, 107, ${alpha})` : `rgba(0, 212, 170, ${alpha})`,
+                'GOOGL': isNegative ? `rgba(255, 107, 107, ${alpha})` : `rgba(72, 202, 228, ${alpha})`,
+                'AMZN': isNegative ? `rgba(255, 107, 107, ${alpha})` : `rgba(254, 202, 87, ${alpha})`,
+                'TSLA': isNegative ? `rgba(255, 107, 107, ${alpha})` : `rgba(255, 107, 107, ${alpha})`,
+                'MSFT': isNegative ? `rgba(255, 107, 107, ${alpha})` : `rgba(102, 126, 234, ${alpha})`
+            };
+            return colors[symbol] || `rgba(139, 148, 158, ${alpha})`;
+        }
+
+        function getLatestPriceChange(symbol) {
+            const data = stockData[symbol];
+            if (!data || !data.previousPrice) return '+0.00%';
+
+            const change = ((data.price - data.previousPrice) / data.previousPrice) * 100;
+            const sign = change >= 0 ? '+' : '';
+            return `${sign}${change.toFixed(2)}%`;
+        }
+
+        function startRealtimeChart() {
+            chartPaused = false;
+
+            // Start periodic chart updates for smooth scrolling
+            if (window.chartUpdateInterval) {
+                clearInterval(window.chartUpdateInterval);
+            }
+
+            window.chartUpdateInterval = setInterval(() => {
+                if (!chartPaused && priceChart) {
+                    updateTimeAxis();
+                    priceChart.update('none');
+                }
+            }, 1000); // Update every second for smooth scrolling
+
+            addLogEntry('Real-time chart streaming started', 'system');
+        }
+
+        function pauseRealtimeChart() {
+            chartPaused = true;
+
+            if (window.chartUpdateInterval) {
+                clearInterval(window.chartUpdateInterval);
+                window.chartUpdateInterval = null;
+            }
+
+            addLogEntry('Real-time chart streaming paused', 'system');
+        }
+
+        function updateChartRealtime(chart) {
+            // Custom real-time update logic
+            if (!chartPaused) {
+                updateTimeAxis();
+            }
+        }
+
+        function updateChart(symbol, price, timestamp) {
+            if (!priceChart || !chartData[symbol] || chartPaused) return;
+
+            const now = new Date(timestamp).getTime();
+            const dataPoint = {
+                x: now,
+                y: price
+            };
+
+            // Add new data point
+            chartData[symbol].push(dataPoint);
+
+            // Get current timeframe duration
+            const timeframe = document.getElementById('chartTimeframe').value;
+            let windowSize;
+            switch(timeframe) {
+                case '1m': windowSize = 60000; break;      // 1 minute
+                case '5m': windowSize = 300000; break;     // 5 minutes
+                case '15m': windowSize = 900000; break;    // 15 minutes
+                case '30m': windowSize = 1800000; break;   // 30 minutes
+                case '1h': windowSize = 3600000; break;    // 1 hour
+                default: windowSize = 300000;              // Default 5 minutes
+            }
+
+            const cutoffTime = now - windowSize;
+
+            // Remove old data points outside the time window
+            chartData[symbol] = chartData[symbol].filter(point => point.x >= cutoffTime);
+
+            // Update chart dataset
+            const datasetIndex = STOCK_SYMBOLS.indexOf(symbol);
+            if (datasetIndex !== -1) {
+                const dataset = priceChart.data.datasets[datasetIndex];
+                dataset.data = [...chartData[symbol]]; // Create new array reference
+
+                // Highlight the latest point temporarily
+                if (chartData[symbol].length > 0) {
+                    // Create point radius array
+                    dataset.pointRadius = chartData[symbol].map((_, index) =>
+                        index === chartData[symbol].length - 1 ? 5 : 0
+                    );
+
+                    // Create point background color array for latest point
+                    dataset.pointBackgroundColor = chartData[symbol].map((_, index) =>
+                        index === chartData[symbol].length - 1 ? getStockColor(symbol) : 'transparent'
+                    );
+
+                    // Hide the point after a short delay
+                    setTimeout(() => {
+                        if (dataset.pointRadius && priceChart) {
+                            dataset.pointRadius = chartData[symbol].map(() => 0);
+                            dataset.pointBackgroundColor = chartData[symbol].map(() => 'transparent');
+                            priceChart.update('none');
+                        }
+                    }, 1500);
+                }
+
+                // Update chart with smooth animation
+                priceChart.update('active');
+
+                // Auto-scale axes for better visibility
+                autoScaleChart();
+
+                // Update time axis range
+                updateTimeAxis();
+            }
+        }
+
+        function updateTimeAxis() {
+            if (!priceChart) return;
+
+            const now = Date.now();
+            const timeframe = document.getElementById('chartTimeframe').value;
+            let windowSize;
+
+            switch(timeframe) {
+                case '1m': windowSize = 60000; break;
+                case '5m': windowSize = 300000; break;
+                case '15m': windowSize = 900000; break;
+                case '30m': windowSize = 1800000; break;
+                case '1h': windowSize = 3600000; break;
+                default: windowSize = 300000;
+            }
+
+            // Set time axis range
+            priceChart.options.scales.x.min = now - windowSize;
+            priceChart.options.scales.x.max = now + (windowSize * 0.05); // Add 5% padding to the right
+        }
+
+        function autoScaleChart() {
+            if (!priceChart) return;
+
+            // Calculate min and max values across all visible datasets
+            let minPrice = Infinity;
+            let maxPrice = -Infinity;
+
+            STOCK_SYMBOLS.forEach(symbol => {
+                if (chartData[symbol] && chartData[symbol].length > 0) {
+                    chartData[symbol].forEach(point => {
+                        minPrice = Math.min(minPrice, point.y);
+                        maxPrice = Math.max(maxPrice, point.y);
+                    });
+                }
+            });
+
+            if (minPrice !== Infinity && maxPrice !== -Infinity) {
+                // Add 5% padding to min/max for better visualization
+                const padding = (maxPrice - minPrice) * 0.05;
+                const suggestedMin = Math.max(0, minPrice - padding);
+                const suggestedMax = maxPrice + padding;
+
+                // Update Y-axis scale
+                priceChart.options.scales.y.min = suggestedMin;
+                priceChart.options.scales.y.max = suggestedMax;
+            }
+        }
+
+        function addChartDataPoint(symbol, price, timestamp) {
+            // High-performance data point addition
+            const now = Date.now();
+
+            if (!chartData[symbol]) {
+                chartData[symbol] = [];
+            }
+
+            // Throttle updates to prevent performance issues
+            const lastUpdate = chartData[symbol].lastUpdateTime || 0;
+            if (now - lastUpdate < 100) { // Minimum 100ms between updates
+                return;
+            }
+
+            chartData[symbol].lastUpdateTime = now;
+            updateChart(symbol, price, timestamp);
+        }
+
+        function optimizeChartPerformance() {
+            if (!priceChart) return;
+
+            // Reduce animation duration for high-frequency updates
+            priceChart.options.animation.duration = 200;
+
+            // Disable hover animations for better performance
+            priceChart.options.hover.animationDuration = 0;
+
+            // Update chart options
+            priceChart.update('none');
+        }
+
+        function resetChartZoom() {
+            if (priceChart) {
+                priceChart.resetZoom();
+                autoScaleChart();
+            }
+        }
+
+        function updateMetrics() {
+            // Update message count
+            document.getElementById('messageCount').textContent = messageCount.toLocaleString();
+
+            // Update last message time
+            document.getElementById('lastMessage').textContent = new Date().toLocaleTimeString();
+
+            // Update latency (simulated)
+            const latency = Math.floor(Math.random() * 50) + 10;
+            document.getElementById('latency').textContent = `${latency}ms`;
+
+            // Update active stocks count
+            updateActiveStocksCount();
+        }
+
+        function updateActiveStocksCount() {
+            const activeCount = Object.keys(stockData).length;
+            document.getElementById('activeStocks').textContent = activeCount;
+        }
+
+        function startConnectionTimer() {
+            connectionTimer = setInterval(() => {
+                if (connectTime) {
+                    const elapsed = Math.floor((new Date() - connectTime) / 1000);
+                    const hours = Math.floor(elapsed / 3600);
+                    const minutes = Math.floor((elapsed % 3600) / 60);
+                    const seconds = elapsed % 60;
+
+                    let timeString = '';
+                    if (hours > 0) {
+                        timeString = `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                    } else {
+                        timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                    }
+
+                    document.getElementById('connectionTime').textContent = timeString;
+                }
+            }, 1000);
+        }
+
+        function stopConnectionTimer() {
+            if (connectionTimer) {
+                clearInterval(connectionTimer);
+                connectionTimer = null;
+            }
+            document.getElementById('connectionTime').textContent = '--';
+        }
+
+        function startMessageRateCalculation() {
+            let lastCount = 0;
+            messageRateTimer = setInterval(() => {
+                const currentRate = messageCount - lastCount;
+                messageRate = currentRate;
+                document.getElementById('messageRate').textContent = `${currentRate}/sec`;
+                lastCount = messageCount;
+            }, 1000);
+        }
+
+        function addLogEntry(message, type = 'data') {
+            const logContainer = document.getElementById('activityLog');
+            const placeholder = logContainer.querySelector('.log-placeholder');
+
+            if (placeholder) {
+                placeholder.remove();
+            }
+
+            const entry = document.createElement('div');
+            entry.className = 'log-entry slide-in';
+
+            const timestamp = new Date().toLocaleTimeString();
+            entry.innerHTML = `
+                <span class="log-timestamp">${timestamp}</span>
+                <span class="log-type ${type}">${type.toUpperCase()}</span>
+                <span class="log-message">${message}</span>
+            `;
+
+            logContainer.insertBefore(entry, logContainer.firstChild);
+
+            // Keep only last 100 entries
+            while (logContainer.children.length > 100) {
+                logContainer.removeChild(logContainer.lastChild);
+            }
+        }
+
+        function toggleActivityLog() {
+            const log = document.getElementById('activityLog');
+            const toggleText = document.getElementById('logToggleText');
+
+            activityLogVisible = !activityLogVisible;
+
+            if (activityLogVisible) {
+                log.classList.remove('hidden');
+                toggleText.textContent = 'Hide';
+            } else {
+                log.classList.add('hidden');
+                toggleText.textContent = 'Show';
+            }
+        }
+
+        function clearMessages() {
+            // Clear activity log
+            const logContainer = document.getElementById('activityLog');
+            logContainer.innerHTML = '<div class="log-placeholder"><i class="fas fa-info-circle"></i> Activity log cleared</div>';
+
+            // Reset counters
+            messageCount = 0;
+            stockData = {};
+
+            // Clear chart data
+            STOCK_SYMBOLS.forEach(symbol => {
+                chartData[symbol] = [];
+            });
+
+            if (priceChart) {
+                priceChart.data.datasets.forEach(dataset => {
+                    dataset.data = [];
+                });
+                priceChart.update();
+            }
+
+            // Reset stock cards
+            initializeStockCards();
+            updateMetrics();
+
+            addLogEntry('Dashboard data cleared', 'system');
+        }
+
+        function updateChartTimeframe() {
+            const timeframe = document.getElementById('chartTimeframe').value;
+
+            // Update chart time window based on selection
+            let duration;
+            switch(timeframe) {
+                case '1m': duration = 60000; break;      // 1 minute
+                case '5m': duration = 300000; break;     // 5 minutes
+                case '15m': duration = 900000; break;    // 15 minutes
+                case '30m': duration = 1800000; break;   // 30 minutes
+                case '1h': duration = 3600000; break;    // 1 hour
+                default: duration = 300000;              // Default 5 minutes
+            }
+
+            if (priceChart && priceChart.options.scales.x.realtime) {
+                priceChart.options.scales.x.realtime.duration = duration;
+                priceChart.update('none');
+            }
+
+            addLogEntry(`Chart timeframe changed to ${timeframe}`, 'system');
+        }
+
+        let chartPaused = false;
+
+        function pauseResumeChart() {
+            const btn = document.getElementById('pauseResumeBtn');
+            const icon = btn.querySelector('i');
+            const text = btn.querySelector('span') || btn.childNodes[btn.childNodes.length - 1];
+
+            chartPaused = !chartPaused;
+
+            if (chartPaused) {
+                pauseRealtimeChart();
+                icon.className = 'fas fa-play';
+                if (text.textContent) text.textContent = 'Resume';
+                else btn.innerHTML = '<i class="fas fa-play"></i> Resume';
+
+                // Hide live indicator
+                document.getElementById('chartLiveIndicator').style.display = 'none';
+                document.getElementById('chartContainer').classList.remove('live');
+
+                addLogEntry('Chart streaming paused', 'system');
+            } else {
+                startRealtimeChart();
+                icon.className = 'fas fa-pause';
+                if (text.textContent) text.textContent = 'Pause';
+                else btn.innerHTML = '<i class="fas fa-pause"></i> Pause';
+
+                // Show live indicator
+                document.getElementById('chartLiveIndicator').style.display = 'flex';
+                document.getElementById('chartContainer').classList.add('live');
+
+                addLogEntry('Chart streaming resumed', 'system');
+            }
+        }
+
+        function optimizeChartForHighFrequency() {
+            if (!priceChart) return;
+
+            // Optimize for high-frequency updates
+            priceChart.options.animation = {
+                duration: 0 // Disable animations for better performance
+            };
+
+            priceChart.options.hover = {
+                animationDuration: 0
+            };
+
+            priceChart.options.responsiveAnimationDuration = 0;
+
+            // Update chart
+            priceChart.update('none');
+        }
+
+        function enableChartAnimations() {
+            if (!priceChart) return;
+
+            // Re-enable animations
+            priceChart.options.animation = {
+                duration: 750,
+                easing: 'easeInOutQuart'
+            };
+
+            priceChart.options.hover = {
+                animationDuration: 400
+            };
+
+            priceChart.options.responsiveAnimationDuration = 500;
+
+            // Update chart
+            priceChart.update('none');
+        }
+
+        function toggleTheme() {
+            isDarkTheme = !isDarkTheme;
+            document.body.classList.toggle('theme-light', !isDarkTheme);
+
+            // Update chart colors if needed
+            if (priceChart) {
+                const textColor = isDarkTheme ? '#ffffff' : '#1a1a2e';
+                const gridColor = isDarkTheme ? '#30363d' : '#e9ecef';
+
+                priceChart.options.plugins.legend.labels.color = textColor;
+                priceChart.options.scales.x.ticks.color = textColor;
+                priceChart.options.scales.y.ticks.color = textColor;
+                priceChart.options.scales.x.grid.color = gridColor;
+                priceChart.options.scales.y.grid.color = gridColor;
+                priceChart.update();
+            }
+
+            addLogEntry(`Theme switched to ${isDarkTheme ? 'dark' : 'light'} mode`, 'system');
+        }
+
+        let highFrequencyMode = false;
+
+        function toggleHighFrequencyMode() {
+            const btn = document.getElementById('highFreqBtn');
+            const icon = btn.querySelector('i');
+
+            highFrequencyMode = !highFrequencyMode;
+
+            if (highFrequencyMode) {
+                // Enable high-frequency optimizations
+                optimizeChartForHighFrequency();
+                icon.className = 'fas fa-tachometer-alt';
+                btn.style.background = 'var(--gradient-danger)';
+                addLogEntry('High-frequency mode enabled - optimized for performance', 'system');
+
+                // Simulate high-frequency updates for demonstration
+                startHighFrequencyDemo();
+            } else {
+                // Restore normal animations
+                enableChartAnimations();
+                icon.className = 'fas fa-tachometer-alt';
+                btn.style.background = 'var(--gradient-primary)';
+                addLogEntry('High-frequency mode disabled - restored animations', 'system');
+
+                // Stop demo
+                stopHighFrequencyDemo();
+            }
+        }
+
+        let highFreqInterval = null;
+
+        function startHighFrequencyDemo() {
+            // This simulates high-frequency updates for demonstration
+            // In production, this would come from the actual data feed
+            if (highFreqInterval) clearInterval(highFreqInterval);
+
+            highFreqInterval = setInterval(() => {
+                if (!highFrequencyMode) return;
+
+                // Simulate rapid price updates
+                STOCK_SYMBOLS.forEach(symbol => {
+                    if (stockData[symbol]) {
+                        const currentPrice = stockData[symbol].price;
+                        const volatility = 0.001; // 0.1% volatility
+                        const change = (Math.random() - 0.5) * 2 * volatility * currentPrice;
+                        const newPrice = Math.max(0.01, currentPrice + change);
+
+                        // Update chart directly for demo
+                        addChartDataPoint(symbol, newPrice, new Date());
+                    }
+                });
+            }, 100); // 10 updates per second
+        }
+
+        function stopHighFrequencyDemo() {
+            if (highFreqInterval) {
+                clearInterval(highFreqInterval);
+                highFreqInterval = null;
+            }
+        }
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            stopHighFrequencyDemo();
+            if (window.chartUpdateInterval) {
+                clearInterval(window.chartUpdateInterval);
+            }
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case 'k':
+                        e.preventDefault();
+                        if (socket && socket.connected) {
+                            disconnect();
+                        } else {
+                            connect();
+                        }
+                        break;
+                    case 'l':
+                        e.preventDefault();
+                        toggleActivityLog();
+                        break;
+                    case 'r':
+                        e.preventDefault();
+                        clearMessages();
+                        break;
+                    case 'h':
+                        e.preventDefault();
+                        toggleHighFrequencyMode();
+                        break;
+                }
+            }
+        });
+    </script>
+</body>
+</html>
