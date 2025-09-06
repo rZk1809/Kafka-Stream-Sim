@@ -8,7 +8,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm install --silent
+RUN npm ci --silent
 
 # Copy source code
 COPY . .
@@ -19,8 +19,9 @@ RUN npm run build
 # Production stage with Nginx
 FROM nginx:1.25-alpine
 
-# Create non-root user
-RUN adduser -S appuser -u 1001
+# Create non-root user and group
+RUN addgroup -g 1001 appuser && \
+    adduser -S -u 1001 -G appuser appuser
 
 # Copy custom nginx configuration
 COPY nginx.conf /etc/nginx/nginx.conf
@@ -29,8 +30,8 @@ COPY nginx.conf /etc/nginx/nginx.conf
 COPY --from=builder /app/build /usr/share/nginx/html
 
 # Create necessary directories and set permissions
-RUN mkdir -p /var/cache/nginx /var/log/nginx /var/run && \
-    chown -R appuser:appuser /var/cache/nginx /var/log/nginx /var/run /usr/share/nginx/html && \
+RUN mkdir -p /var/cache/nginx /var/log/nginx /tmp && \
+    chown -R appuser:appuser /var/cache/nginx /var/log/nginx /tmp /usr/share/nginx/html && \
     chmod -R 755 /usr/share/nginx/html
 
 # Switch to non-root user

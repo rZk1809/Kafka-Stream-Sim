@@ -9,8 +9,8 @@ import {
   TimeRange,
   KafkaMetrics,
   ConnectionStatus
-} from '@/types';
-import { calculatePriceChangePercentage, determineTrend } from '@/utils/formatters';
+} from '../types';
+import { calculatePriceChangePercentage, determineTrend } from '../utils/formatters';
 
 // Initial state
 const initialState: AppState = {
@@ -251,7 +251,7 @@ interface AppProviderProps {
 export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const [state, dispatch] = useReducer(appReducer, {
     ...initialState,
-    stockData: initializeStockData(STOCK_SYMBOLS)
+    stockData: initializeStockData([...STOCK_SYMBOLS])
   });
 
   // Action creators

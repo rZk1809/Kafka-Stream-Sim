@@ -7,13 +7,13 @@ import {
   useTheme,
   useMediaQuery
 } from '@mui/material';
-import { useStockData, useMarketData } from '@/hooks/useStockData';
-import { useAppContext } from '@/context/AppContext';
+import { useStockData, useMarketData } from '../hooks/useStockData';
+import { useAppContext } from '../context/AppContext';
 import StockChart from './StockChart';
 import MessageTable from './MessageTable';
 import MetricsPanel from './MetricsPanel';
 import SymbolFilter from './SymbolFilter';
-import { STOCK_SYMBOLS } from '@/types';
+import { STOCK_SYMBOLS } from '../types';
 
 const Dashboard: React.FC = () => {
   const theme = useTheme();

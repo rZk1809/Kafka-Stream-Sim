@@ -16,7 +16,53 @@ import {
   SelectAll as SelectAllIcon,
   Clear as ClearIcon 
 } from '@mui/icons-material';
-import { SymbolFilterProps, SYMBOL_COLORS } from '@/types';
+import { SymbolFilterProps, SYMBOL_COLORS } from '../types';
+
+// Define the color type explicitly
+type ColorScheme = {
+  primary: string;
+  secondary: string;
+  background: string;
+};
+
+// Helper function to get symbol colors with guaranteed fallback
+const getSymbolColors = (symbol: string): ColorScheme => {
+  // Provide a guaranteed fallback to ensure we never return undefined
+  const fallback: ColorScheme = { primary: '#1976d2', secondary: '#42a5f5', background: '#e3f2fd' };
+
+  // Use explicit type checking and fallback
+  try {
+    const colors = SYMBOL_COLORS?.[symbol];
+    if (colors && typeof colors === 'object' && colors.primary && colors.secondary && colors.background) {
+      return {
+        primary: colors.primary,
+        secondary: colors.secondary,
+        background: colors.background
+      };
+    }
+
+    const aaplColors = SYMBOL_COLORS?.AAPL;
+    if (aaplColors && typeof aaplColors === 'object' && aaplColors.primary && aaplColors.secondary && aaplColors.background) {
+      return {
+        primary: aaplColors.primary,
+        secondary: aaplColors.secondary,
+        background: aaplColors.background
+      };
+    }
+  } catch (error) {
+    console.warn('Error accessing symbol colors:', error);
+  }
+
+  // Return hardcoded fallback
+  return fallback;
+};
+
+// Helper function to safely get symbol colors with explicit non-null assertion
+const getSafeSymbolColors = (symbol: string) => {
+  const colors = getSymbolColors(symbol);
+  // TypeScript assertion that this will never be null/undefined
+  return colors as NonNullable<ColorScheme>;
+};
 
 const ITEM_HEIGHT = 48;
 const ITEM_PADDING_TOP = 8;
@@ -63,18 +109,18 @@ const SymbolFilter: React.FC<SymbolFilterProps> = ({
             renderValue={(selected) => (
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                 {selected.map((symbol) => {
-                  const symbolColors = SYMBOL_COLORS[symbol] || SYMBOL_COLORS.AAPL;
+                  const symbolColors = getSafeSymbolColors(symbol);
                   return (
                     <Chip
                       key={symbol}
                       label={symbol}
                       size="small"
                       sx={{
-                        backgroundColor: symbolColors.background,
-                        color: symbolColors.primary,
+                        backgroundColor: symbolColors!.background,
+                        color: symbolColors!.primary,
                         fontWeight: 600,
                         '& .MuiChip-deleteIcon': {
-                          color: symbolColors.primary
+                          color: symbolColors!.primary
                         }
                       }}
                     />
@@ -85,22 +131,22 @@ const SymbolFilter: React.FC<SymbolFilterProps> = ({
             MenuProps={MenuProps}
           >
             {availableSymbols.map((symbol) => {
-              const symbolColors = SYMBOL_COLORS[symbol] || SYMBOL_COLORS.AAPL;
+              const symbolColors = getSafeSymbolColors(symbol);
               const isSelected = selectedSymbols.includes(symbol);
-              
+
               return (
-                <MenuItem 
-                  key={symbol} 
+                <MenuItem
+                  key={symbol}
                   value={symbol}
                   sx={{
-                    backgroundColor: isSelected ? symbolColors.background : 'transparent',
+                    backgroundColor: isSelected ? symbolColors!.background : 'transparent',
                     '&:hover': {
-                      backgroundColor: symbolColors.background
+                      backgroundColor: symbolColors!.background
                     },
                     '&.Mui-selected': {
-                      backgroundColor: symbolColors.background,
+                      backgroundColor: symbolColors!.background,
                       '&:hover': {
-                        backgroundColor: symbolColors.background
+                        backgroundColor: symbolColors!.background
                       }
                     }
                   }}
@@ -110,9 +156,9 @@ const SymbolFilter: React.FC<SymbolFilterProps> = ({
                     size="small"
                     variant={isSelected ? "filled" : "outlined"}
                     sx={{
-                      backgroundColor: isSelected ? symbolColors.primary : 'transparent',
-                      color: isSelected ? '#ffffff' : symbolColors.primary,
-                      borderColor: symbolColors.primary,
+                      backgroundColor: isSelected ? symbolColors!.primary : 'transparent',
+                      color: isSelected ? '#ffffff' : symbolColors!.primary,
+                      borderColor: symbolColors!.primary,
                       fontWeight: 600,
                       minWidth: '60px'
                     }}
@@ -164,7 +210,7 @@ const SymbolFilter: React.FC<SymbolFilterProps> = ({
           </Typography>
           <Stack direction="row" spacing={1} flexWrap="wrap">
             {selectedSymbols.map((symbol) => {
-              const symbolColors = SYMBOL_COLORS[symbol] || SYMBOL_COLORS.AAPL;
+              const symbolColors = getSafeSymbolColors(symbol);
               return (
                 <Chip
                   key={symbol}
@@ -175,13 +221,13 @@ const SymbolFilter: React.FC<SymbolFilterProps> = ({
                     onSelectionChange(newSelection);
                   }}
                   sx={{
-                    backgroundColor: symbolColors.background,
-                    color: symbolColors.primary,
+                    backgroundColor: symbolColors!.background,
+                    color: symbolColors!.primary,
                     fontWeight: 600,
                     '& .MuiChip-deleteIcon': {
-                      color: symbolColors.primary,
+                      color: symbolColors!.primary,
                       '&:hover': {
-                        color: symbolColors.primary
+                        color: symbolColors!.primary
                       }
                     }
                   }}

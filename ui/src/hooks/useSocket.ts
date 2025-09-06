@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { useAppContext } from '@/context/AppContext';
-import { StockTick, KafkaMetrics } from '@/types';
+import { useAppContext } from '../context/AppContext';
+import { StockTick, KafkaMetrics } from '../types';
 
 interface UseSocketOptions {
   url?: string;

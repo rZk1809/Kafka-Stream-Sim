@@ -16,15 +16,15 @@ import {
   Storage as StorageIcon,
   Timer as TimerIcon,
   TrendingUp as TrendingUpIcon,
-  Partition as PartitionIcon
+  ViewModule as PartitionIcon
 } from '@mui/icons-material';
-import { MetricsPanelProps } from '@/types';
+import { MetricsPanelProps } from '../types';
 import { 
   formatRate, 
   formatUptime, 
   formatLargeNumber,
   formatConnectionStatus
-} from '@/utils/formatters';
+} from '../utils/formatters';
 
 const MetricsPanel: React.FC<MetricsPanelProps> = ({
   metrics,

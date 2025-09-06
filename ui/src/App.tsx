@@ -9,10 +9,10 @@ import {
   Alert,
   Snackbar
 } from '@mui/material';
-import { useSocket } from '@/hooks/useSocket';
-import { useAppContext } from '@/context/AppContext';
-import Dashboard from '@/components/Dashboard';
-import ConnectionStatus from '@/components/ConnectionStatus';
+import { useSocket } from './hooks/useSocket';
+import { useAppContext } from './context/AppContext';
+import Dashboard from './components/Dashboard';
+import ConnectionStatus from './components/ConnectionStatus';
 
 const App: React.FC = () => {
   const { state, actions } = useAppContext();
@@ -33,6 +33,8 @@ const App: React.FC = () => {
       }, 5000);
       return () => clearTimeout(timer);
     }
+    // Return undefined explicitly when error is falsy
+    return undefined;
   }, [error, actions]);
 
   return (

@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import { useAppContext } from '@/context/AppContext';
-import { StockData, StockTick, PricePoint, VolumePoint, TimeRange } from '@/types';
+import { useAppContext } from '../context/AppContext';
+import { StockData, StockTick, PricePoint, VolumePoint, TimeRange } from '../types';
 
 interface UseStockDataReturn {
   stockData: Record<string, StockData>;
@@ -33,8 +33,9 @@ export const useStockData = (): UseStockDataReturn => {
   const filteredStockData = useMemo(() => {
     const filtered: Record<string, StockData> = {};
     selectedSymbols.forEach(symbol => {
-      if (stockData[symbol]) {
-        filtered[symbol] = stockData[symbol];
+      const symbolData = stockData[symbol];
+      if (symbolData) {
+        filtered[symbol] = symbolData;
       }
     });
     return filtered;

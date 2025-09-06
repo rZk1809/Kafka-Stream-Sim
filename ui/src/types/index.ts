@@ -133,7 +133,7 @@ export interface MetricsPanelProps {
 }
 
 export interface SymbolFilterProps {
-  availableSymbols: string[];
+  availableSymbols: readonly string[];
   selectedSymbols: string[];
   onSelectionChange: (symbols: string[]) => void;
 }

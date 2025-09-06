@@ -24,14 +24,53 @@ import {
 import { 
   StockChartProps, 
   SYMBOL_COLORS 
-} from '@/types';
-import { 
-  formatPrice, 
-  formatPriceChange, 
-  formatPercentageChange, 
+} from '../types';
+import {
+  formatPrice,
+  formatPriceChange,
+  formatPercentageChange,
   formatVolume,
   getTrendIndicator
-} from '@/utils/formatters';
+} from '../utils/formatters';
+
+// Define the color type explicitly
+type ColorScheme = {
+  primary: string;
+  secondary: string;
+  background: string;
+};
+
+// Helper function to get symbol colors with guaranteed fallback
+const getSymbolColors = (symbol: string): ColorScheme => {
+  // Provide a guaranteed fallback to ensure we never return undefined
+  const fallback: ColorScheme = { primary: '#1976d2', secondary: '#42a5f5', background: '#e3f2fd' };
+
+  // Use explicit type checking and fallback
+  try {
+    const colors = SYMBOL_COLORS?.[symbol];
+    if (colors && typeof colors === 'object' && colors.primary && colors.secondary && colors.background) {
+      return {
+        primary: colors.primary,
+        secondary: colors.secondary,
+        background: colors.background
+      };
+    }
+
+    const aaplColors = SYMBOL_COLORS?.AAPL;
+    if (aaplColors && typeof aaplColors === 'object' && aaplColors.primary && aaplColors.secondary && aaplColors.background) {
+      return {
+        primary: aaplColors.primary,
+        secondary: aaplColors.secondary,
+        background: aaplColors.background
+      };
+    }
+  } catch (error) {
+    console.warn('Error accessing symbol colors:', error);
+  }
+
+  // Return hardcoded fallback
+  return fallback;
+};
 
 // Register Chart.js components
 ChartJS.register(
@@ -53,7 +92,7 @@ const StockChart: React.FC<StockChartProps> = ({
   height = 300
 }) => {
   const theme = useTheme();
-  const symbolColors = SYMBOL_COLORS[symbol] || SYMBOL_COLORS.AAPL;
+  const symbolColors = getSymbolColors(symbol);
 
   // Prepare chart data
   const chartData = useMemo(() => {
@@ -72,14 +111,14 @@ const StockChart: React.FC<StockChartProps> = ({
         {
           label: `${symbol} Price`,
           data: priceData,
-          borderColor: symbolColors.primary,
-          backgroundColor: symbolColors.background,
+          borderColor: symbolColors!.primary,
+          backgroundColor: symbolColors!.background,
           borderWidth: 2,
           fill: false,
           tension: 0.1,
           pointRadius: 0,
           pointHoverRadius: 4,
-          pointBackgroundColor: symbolColors.primary,
+          pointBackgroundColor: symbolColors!.primary,
           pointBorderColor: '#ffffff',
           pointBorderWidth: 2,
           yAxisID: 'price'
@@ -87,8 +126,8 @@ const StockChart: React.FC<StockChartProps> = ({
         ...(showVolume ? [{
           label: `${symbol} Volume`,
           data: volumeData,
-          borderColor: symbolColors.secondary,
-          backgroundColor: `${symbolColors.secondary}20`,
+          borderColor: symbolColors!.secondary,
+          backgroundColor: `${symbolColors!.secondary}20`,
           borderWidth: 1,
           fill: true,
           tension: 0.1,
@@ -122,8 +161,11 @@ const StockChart: React.FC<StockChartProps> = ({
         displayColors: true,
         callbacks: {
           title: (context) => {
-            const date = new Date(context[0].parsed.x);
-            return date.toLocaleTimeString();
+            if (context && context[0] && context[0].parsed) {
+              const date = new Date(context[0].parsed.x);
+              return date.toLocaleTimeString();
+            }
+            return '';
           },
           label: (context: TooltipItem<'line'>) => {
             const datasetLabel = context.dataset.label || '';

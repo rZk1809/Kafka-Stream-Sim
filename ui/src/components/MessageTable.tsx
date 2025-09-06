@@ -14,14 +14,53 @@ import {
   useTheme
 } from '@mui/material';
 import { FilterList as FilterIcon } from '@mui/icons-material';
-import { MessageTableProps, SYMBOL_COLORS } from '@/types';
-import { 
-  formatPrice, 
-  formatVolume, 
-  formatTimestamp, 
+import { MessageTableProps, SYMBOL_COLORS } from '../types';
+import {
+  formatPrice,
+  formatVolume,
+  formatTimestamp,
   formatPartitionOffset,
   getTrendIndicator
-} from '@/utils/formatters';
+} from '../utils/formatters';
+
+// Define the color type explicitly
+type ColorScheme = {
+  primary: string;
+  secondary: string;
+  background: string;
+};
+
+// Helper function to get symbol colors with guaranteed fallback
+const getSymbolColors = (symbol: string): ColorScheme => {
+  // Provide a guaranteed fallback to ensure we never return undefined
+  const fallback: ColorScheme = { primary: '#1976d2', secondary: '#42a5f5', background: '#e3f2fd' };
+
+  // Use explicit type checking and fallback
+  try {
+    const colors = SYMBOL_COLORS?.[symbol];
+    if (colors && typeof colors === 'object' && colors.primary && colors.secondary && colors.background) {
+      return {
+        primary: colors.primary,
+        secondary: colors.secondary,
+        background: colors.background
+      };
+    }
+
+    const aaplColors = SYMBOL_COLORS?.AAPL;
+    if (aaplColors && typeof aaplColors === 'object' && aaplColors.primary && aaplColors.secondary && aaplColors.background) {
+      return {
+        primary: aaplColors.primary,
+        secondary: aaplColors.secondary,
+        background: aaplColors.background
+      };
+    }
+  } catch (error) {
+    console.warn('Error accessing symbol colors:', error);
+  }
+
+  // Return hardcoded fallback
+  return fallback;
+};
 
 const MessageTable: React.FC<MessageTableProps> = ({
   ticks,
@@ -90,7 +129,7 @@ const MessageTable: React.FC<MessageTableProps> = ({
           <TableBody>
             {ticksWithTrend.length > 0 ? (
               ticksWithTrend.map((tick, index) => {
-                const symbolColors = SYMBOL_COLORS[tick.symbol] || SYMBOL_COLORS.AAPL;
+                const symbolColors = getSymbolColors(tick.symbol);
                 
                 return (
                   <TableRow 
@@ -116,8 +155,8 @@ const MessageTable: React.FC<MessageTableProps> = ({
                         label={tick.symbol}
                         size="small"
                         sx={{
-                          backgroundColor: symbolColors.background,
-                          color: symbolColors.primary,
+                          backgroundColor: symbolColors!.background,
+                          color: symbolColors!.primary,
                           fontWeight: 600,
                           minWidth: '60px'
                         }}
@@ -184,10 +223,10 @@ const MessageTable: React.FC<MessageTableProps> = ({
                         <IconButton
                           size="small"
                           onClick={() => handleSymbolClick(tick.symbol)}
-                          sx={{ 
+                          sx={{
                             color: 'text.secondary',
                             '&:hover': {
-                              color: symbolColors.primary
+                              color: symbolColors!.primary
                             }
                           }}
                         >

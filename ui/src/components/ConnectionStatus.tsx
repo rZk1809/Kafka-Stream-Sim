@@ -14,9 +14,9 @@ import {
   Refresh as RefreshIcon,
   Error as ErrorIcon
 } from '@mui/icons-material';
-import { useAppContext } from '@/context/AppContext';
-import { useSocket } from '@/hooks/useSocket';
-import { formatConnectionStatus } from '@/utils/formatters';
+import { useAppContext } from '../context/AppContext';
+import { useSocket } from '../hooks/useSocket';
+import { formatConnectionStatus } from '../utils/formatters';
 
 const ConnectionStatus: React.FC = () => {
   const { state } = useAppContext();
