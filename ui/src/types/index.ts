@@ -64,6 +64,13 @@ export interface AppState {
   timeRange: TimeRange;
   isLoading: boolean;
   error: string | null;
+  // New features
+  portfolio: Portfolio;
+  alerts: Alert[];
+  marketSummary: MarketSummary;
+  historicalData: Record<string, HistoricalData>;
+  theme: 'light' | 'dark';
+  currentView: 'dashboard' | 'trading' | 'portfolio' | 'alerts' | 'history';
 }
 
 // Time range for charts
@@ -99,7 +106,17 @@ export type AppAction =
   | { type: 'SET_SELECTED_SYMBOLS'; payload: string[] }
   | { type: 'SET_TIME_RANGE'; payload: TimeRange }
   | { type: 'CLEAR_DATA' }
-  | { type: 'INITIALIZE_STOCK_DATA'; payload: string[] };
+  | { type: 'INITIALIZE_STOCK_DATA'; payload: string[] }
+  // New actions for enhanced features
+  | { type: 'ADD_TRADE'; payload: Trade }
+  | { type: 'UPDATE_PORTFOLIO'; payload: Portfolio }
+  | { type: 'ADD_ALERT'; payload: Alert }
+  | { type: 'UPDATE_ALERT'; payload: { id: string; updates: Partial<Alert> } }
+  | { type: 'REMOVE_ALERT'; payload: string }
+  | { type: 'UPDATE_MARKET_SUMMARY'; payload: MarketSummary }
+  | { type: 'SET_HISTORICAL_DATA'; payload: { symbol: string; data: HistoricalData } }
+  | { type: 'SET_THEME'; payload: 'light' | 'dark' }
+  | { type: 'SET_CURRENT_VIEW'; payload: 'dashboard' | 'trading' | 'portfolio' | 'alerts' | 'history' };
 
 // Theme configuration
 export interface ThemeConfig {
@@ -183,6 +200,78 @@ export interface SocketEvents {
   'reconnect_attempt': (attemptNumber: number) => void;
   'reconnect_error': (error: Error) => void;
   'reconnect_failed': () => void;
+}
+
+// Trading and Portfolio types
+export interface Trade {
+  id: string;
+  symbol: string;
+  type: 'buy' | 'sell';
+  quantity: number;
+  price: number;
+  timestamp: string;
+  status: 'pending' | 'completed' | 'cancelled';
+}
+
+export interface Position {
+  symbol: string;
+  quantity: number;
+  averagePrice: number;
+  currentPrice: number;
+  marketValue: number;
+  unrealizedPnL: number;
+  unrealizedPnLPercent: number;
+  lastUpdate: string;
+}
+
+export interface Portfolio {
+  totalValue: number;
+  totalCost: number;
+  totalPnL: number;
+  totalPnLPercent: number;
+  positions: Position[];
+  trades: Trade[];
+  cash: number;
+  lastUpdate: string;
+}
+
+export interface Alert {
+  id: string;
+  symbol: string;
+  type: 'price_above' | 'price_below' | 'volume_above';
+  value: number;
+  currentValue: number;
+  isActive: boolean;
+  triggered: boolean;
+  createdAt: string;
+  triggeredAt?: string;
+}
+
+export interface MarketSummary {
+  indices: {
+    name: string;
+    value: number;
+    change: number;
+    changePercent: number;
+  }[];
+  sentiment: 'bullish' | 'bearish' | 'neutral';
+  volatility: 'low' | 'medium' | 'high';
+  volume: number;
+  advancers: number;
+  decliners: number;
+}
+
+export interface HistoricalData {
+  symbol: string;
+  timeframe: '1h' | '1d' | '1w' | '1m';
+  data: {
+    timestamp: string;
+    open: number;
+    high: number;
+    low: number;
+    close: number;
+    volume: number;
+  }[];
 }
 
 // Constants

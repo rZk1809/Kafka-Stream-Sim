@@ -1,0 +1,114 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zookeeper
+  namespace: kafka-stream-sim
+  labels:
+    app: kafka-stream-sim
+    component: zookeeper
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka-stream-sim
+      component: zookeeper
+  template:
+    metadata:
+      labels:
+        app: kafka-stream-sim
+        component: zookeeper
+    spec:
+      containers:
+      - name: zookeeper
+        image: confluentinc/cp-zookeeper:7.4.0
+        ports:
+        - containerPort: 2181
+          name: client
+        - containerPort: 2888
+          name: server
+        - containerPort: 3888
+          name: leader-election
+        env:
+        - name: ZOOKEEPER_CLIENT_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: kafka-config
+              key: ZOOKEEPER_CLIENT_PORT
+        - name: ZOOKEEPER_TICK_TIME
+          valueFrom:
+            configMapKeyRef:
+              name: kafka-config
+              key: ZOOKEEPER_TICK_TIME
+        - name: ZOOKEEPER_SYNC_LIMIT
+          valueFrom:
+            configMapKeyRef:
+              name: kafka-config
+              key: ZOOKEEPER_SYNC_LIMIT
+        volumeMounts:
+        - name: zookeeper-data
+          mountPath: /var/lib/zookeeper/data
+        - name: zookeeper-logs
+          mountPath: /var/lib/zookeeper/log
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - "nc -z localhost 2181"
+          initialDelaySeconds: 40
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - "nc -z localhost 2181"
+          initialDelaySeconds: 20
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+      volumes:
+      - name: zookeeper-data
+        persistentVolumeClaim:
+          claimName: zookeeper-data-pvc
+      - name: zookeeper-logs
+        persistentVolumeClaim:
+          claimName: zookeeper-logs-pvc
+      restartPolicy: Always
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: zookeeper-service
+  namespace: kafka-stream-sim
+  labels:
+    app: kafka-stream-sim
+    component: zookeeper
+spec:
+  selector:
+    app: kafka-stream-sim
+    component: zookeeper
+  ports:
+  - name: client
+    port: 2181
+    targetPort: 2181
+    protocol: TCP
+  - name: server
+    port: 2888
+    targetPort: 2888
+    protocol: TCP
+  - name: leader-election
+    port: 3888
+    targetPort: 3888
+    protocol: TCP
+  type: ClusterIP

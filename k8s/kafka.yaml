@@ -1,0 +1,164 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka
+  namespace: kafka-stream-sim
+  labels:
+    app: kafka-stream-sim
+    component: kafka
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka-stream-sim
+      component: kafka
+  template:
+    metadata:
+      labels:
+        app: kafka-stream-sim
+        component: kafka
+    spec:
+      containers:
+      - name: kafka
+        image: confluentinc/cp-kafka:7.4.0
+        ports:
+        - containerPort: 9092
+          name: external
+        - containerPort: 29092
+          name: internal
+        - containerPort: 9101
+          name: jmx
+        env:
+        - name: KAFKA_BROKER_ID
+          valueFrom:
+            configMapKeyRef:
+              name: kafka-config
+              key: KAFKA_BROKER_ID
+        - name: KAFKA_ZOOKEEPER_CONNECT
+          valueFrom:
+            configMapKeyRef:
+              name: kafka-config
+              key: KAFKA_ZOOKEEPER_CONNECT
+        - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
+          valueFrom:
+            configMapKeyRef:
+              name: kafka-config
+              key: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
+        - name: KAFKA_ADVERTISED_LISTENERS
+          valueFrom:
+            configMapKeyRef:
+              name: kafka-config
+              key: KAFKA_ADVERTISED_LISTENERS
+        - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
+          valueFrom:
+            configMapKeyRef:
+              name: kafka-config
+              key: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
+        - name: KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS
+          valueFrom:
+            configMapKeyRef:
+              name: kafka-config
+              key: KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS
+        - name: KAFKA_AUTO_CREATE_TOPICS_ENABLE
+          valueFrom:
+            configMapKeyRef:
+              name: kafka-config
+              key: KAFKA_AUTO_CREATE_TOPICS_ENABLE
+        - name: KAFKA_DELETE_TOPIC_ENABLE
+          valueFrom:
+            configMapKeyRef:
+              name: kafka-config
+              key: KAFKA_DELETE_TOPIC_ENABLE
+        - name: KAFKA_LOG_RETENTION_HOURS
+          valueFrom:
+            configMapKeyRef:
+              name: kafka-config
+              key: KAFKA_LOG_RETENTION_HOURS
+        - name: KAFKA_LOG_SEGMENT_BYTES
+          valueFrom:
+            configMapKeyRef:
+              name: kafka-config
+              key: KAFKA_LOG_SEGMENT_BYTES
+        - name: KAFKA_LOG_RETENTION_CHECK_INTERVAL_MS
+          valueFrom:
+            configMapKeyRef:
+              name: kafka-config
+              key: KAFKA_LOG_RETENTION_CHECK_INTERVAL_MS
+        - name: KAFKA_MESSAGE_MAX_BYTES
+          valueFrom:
+            configMapKeyRef:
+              name: kafka-config
+              key: KAFKA_MESSAGE_MAX_BYTES
+        - name: KAFKA_REPLICA_FETCH_MAX_BYTES
+          valueFrom:
+            configMapKeyRef:
+              name: kafka-config
+              key: KAFKA_REPLICA_FETCH_MAX_BYTES
+        - name: KAFKA_NUM_PARTITIONS
+          valueFrom:
+            configMapKeyRef:
+              name: kafka-config
+              key: KAFKA_NUM_PARTITIONS
+        volumeMounts:
+        - name: kafka-data
+          mountPath: /var/lib/kafka/data
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - "kafka-broker-api-versions --bootstrap-server localhost:9092"
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - "kafka-broker-api-versions --bootstrap-server localhost:9092"
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+      volumes:
+      - name: kafka-data
+        persistentVolumeClaim:
+          claimName: kafka-data-pvc
+      restartPolicy: Always
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-service
+  namespace: kafka-stream-sim
+  labels:
+    app: kafka-stream-sim
+    component: kafka
+spec:
+  selector:
+    app: kafka-stream-sim
+    component: kafka
+  ports:
+  - name: external
+    port: 9092
+    targetPort: 9092
+    protocol: TCP
+  - name: internal
+    port: 29092
+    targetPort: 29092
+    protocol: TCP
+  - name: jmx
+    port: 9101
+    targetPort: 9101
+    protocol: TCP
+  type: ClusterIP

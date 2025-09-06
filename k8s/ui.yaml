@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ui
+  namespace: kafka-stream-sim
+  labels:
+    app: kafka-stream-sim
+    component: ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka-stream-sim
+      component: ui
+  template:
+    metadata:
+      labels:
+        app: kafka-stream-sim
+        component: ui
+    spec:
+      containers:
+      - name: ui
+        image: kafka-stream-sim-ui:latest
+        imagePullPolicy: Never  # Use local image built by Docker Compose
+        ports:
+        - containerPort: 3000
+          name: http
+        env:
+        - name: REACT_APP_WEBSOCKET_URL
+          valueFrom:
+            configMapKeyRef:
+              name: ui-config
+              key: REACT_APP_WEBSOCKET_URL
+        - name: REACT_APP_API_URL
+          valueFrom:
+            configMapKeyRef:
+              name: ui-config
+              key: REACT_APP_API_URL
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "250m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+      restartPolicy: Always
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ui-service
+  namespace: kafka-stream-sim
+  labels:
+    app: kafka-stream-sim
+    component: ui
+spec:
+  selector:
+    app: kafka-stream-sim
+    component: ui
+  ports:
+  - name: http
+    port: 3000
+    targetPort: 3000
+    protocol: TCP
+  type: LoadBalancer  # Expose UI externally

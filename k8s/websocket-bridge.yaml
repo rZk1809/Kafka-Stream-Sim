@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: websocket-bridge
+  namespace: kafka-stream-sim
+  labels:
+    app: kafka-stream-sim
+    component: websocket-bridge
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka-stream-sim
+      component: websocket-bridge
+  template:
+    metadata:
+      labels:
+        app: kafka-stream-sim
+        component: websocket-bridge
+    spec:
+      containers:
+      - name: websocket-bridge
+        image: kafka-stream-sim-websocket-bridge:latest
+        imagePullPolicy: Never  # Use local image built by Docker Compose
+        ports:
+        - containerPort: 8080
+          name: websocket
+        env:
+        - name: KAFKA_BROKER
+          valueFrom:
+            configMapKeyRef:
+              name: kafka-config
+              key: KAFKA_BOOTSTRAP_SERVERS
+        - name: PORT
+          valueFrom:
+            configMapKeyRef:
+              name: kafka-config
+              key: WEBSOCKET_PORT
+        - name: CORS_ORIGIN
+          valueFrom:
+            configMapKeyRef:
+              name: kafka-config
+              key: CORS_ORIGIN
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "250m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+      restartPolicy: Always
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: websocket-bridge-service
+  namespace: kafka-stream-sim
+  labels:
+    app: kafka-stream-sim
+    component: websocket-bridge
+spec:
+  selector:
+    app: kafka-stream-sim
+    component: websocket-bridge
+  ports:
+  - name: websocket
+    port: 8080
+    targetPort: 8080
+    protocol: TCP
+  type: ClusterIP

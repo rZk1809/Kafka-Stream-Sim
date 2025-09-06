@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: producer
+  namespace: kafka-stream-sim
+  labels:
+    app: kafka-stream-sim
+    component: producer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka-stream-sim
+      component: producer
+  template:
+    metadata:
+      labels:
+        app: kafka-stream-sim
+        component: producer
+    spec:
+      containers:
+      - name: producer
+        image: kafka-stream-sim-producer:latest
+        imagePullPolicy: Never  # Use local image built by Docker Compose
+        env:
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          valueFrom:
+            configMapKeyRef:
+              name: kafka-config
+              key: KAFKA_BOOTSTRAP_SERVERS
+        - name: KAFKA_TOPIC
+          valueFrom:
+            configMapKeyRef:
+              name: kafka-config
+              key: KAFKA_TOPIC
+        - name: PRODUCER_INTERVAL
+          valueFrom:
+            configMapKeyRef:
+              name: kafka-config
+              key: PRODUCER_INTERVAL
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: kafka-config
+              key: LOG_LEVEL
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "250m"
+        livenessProbe:
+          exec:
+            command:
+            - python
+            - -c
+            - "import sys; sys.exit(0)"
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command:
+            - python
+            - -c
+            - "import sys; sys.exit(0)"
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+      restartPolicy: Always

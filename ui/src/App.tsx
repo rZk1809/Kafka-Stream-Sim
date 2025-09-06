@@ -1,25 +1,31 @@
 import React, { useEffect } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { 
-  Box, 
-  AppBar, 
-  Toolbar, 
-  Typography, 
+import {
+  Box,
+  AppBar,
+  Toolbar,
+  Typography,
   Container,
   Alert,
-  Snackbar
+  Snackbar,
+  ThemeProvider,
+  createTheme,
+  CssBaseline
 } from '@mui/material';
 import { useSocket } from './hooks/useSocket';
 import { useAppContext } from './context/AppContext';
 import Dashboard from './components/Dashboard';
+import TradingInterface from './components/TradingInterface';
+import PortfolioView from './components/PortfolioView';
+import Navigation from './components/Navigation';
+import ThemeToggle from './components/ThemeToggle';
 import ConnectionStatus from './components/ConnectionStatus';
 
 const App: React.FC = () => {
   const { state, actions } = useAppContext();
-  const { error } = state;
-  
+  const { error, theme, currentView } = state;
+
   // Initialize WebSocket connection
-  const { isConnected } = useSocket({
+  useSocket({
     autoConnect: true,
     reconnectionAttempts: 5,
     reconnectionDelay: 1000
@@ -37,71 +43,109 @@ const App: React.FC = () => {
     return undefined;
   }, [error, actions]);
 
+  // Create theme based on current theme mode
+  const muiTheme = createTheme({
+    palette: {
+      mode: theme,
+      primary: {
+        main: theme === 'dark' ? '#90caf9' : '#1976d2',
+      },
+      secondary: {
+        main: theme === 'dark' ? '#f48fb1' : '#dc004e',
+      },
+      background: {
+        default: theme === 'dark' ? '#121212' : '#fafafa',
+        paper: theme === 'dark' ? '#1e1e1e' : '#ffffff',
+      },
+    },
+    typography: {
+      fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
+    },
+  });
+
+  const renderCurrentView = () => {
+    switch (currentView) {
+      case 'trading':
+        return <TradingInterface />;
+      case 'portfolio':
+        return <PortfolioView />;
+      case 'alerts':
+        return <div>Alerts View (Coming Soon)</div>;
+      case 'history':
+        return <div>Historical Data View (Coming Soon)</div>;
+      case 'dashboard':
+      default:
+        return <Dashboard />;
+    }
+  };
+
   return (
-    <Box sx={{ 
-      display: 'flex', 
-      flexDirection: 'column', 
-      minHeight: '100vh',
-      backgroundColor: 'background.default'
-    }}>
-      {/* App Bar */}
-      <AppBar 
-        position="static" 
-        elevation={0}
-        sx={{ 
-          backgroundColor: 'background.paper',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.12)'
-        }}
-      >
-        <Toolbar>
-          <Typography 
-            variant="h6" 
-            component="h1" 
-            sx={{ 
-              flexGrow: 1,
-              fontWeight: 600,
-              color: 'primary.main'
-            }}
-          >
-            Kafka Stream Simulator
-          </Typography>
-          <ConnectionStatus />
-        </Toolbar>
-      </AppBar>
-
-      {/* Main Content */}
-      <Container 
-        maxWidth={false} 
-        sx={{ 
-          flexGrow: 1, 
-          py: 3,
-          px: { xs: 2, sm: 3 }
-        }}
-      >
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Container>
-
-      {/* Error Snackbar */}
-      <Snackbar
-        open={!!error}
-        autoHideDuration={5000}
-        onClose={() => actions.setError(null)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-      >
-        <Alert 
-          onClose={() => actions.setError(null)} 
-          severity="error" 
-          variant="filled"
-          sx={{ width: '100%' }}
+    <ThemeProvider theme={muiTheme}>
+      <CssBaseline />
+      <Box sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: '100vh',
+        backgroundColor: 'background.default'
+      }}>
+        {/* App Bar */}
+        <AppBar
+          position="static"
+          elevation={0}
+          sx={{
+            backgroundColor: 'background.paper',
+            borderBottom: '1px solid',
+            borderColor: 'divider'
+          }}
         >
-          {error}
-        </Alert>
-      </Snackbar>
-    </Box>
+          <Toolbar>
+            <Typography
+              variant="h6"
+              component="h1"
+              sx={{
+                flexGrow: 1,
+                fontWeight: 600,
+                color: 'primary.main'
+              }}
+            >
+              Kafka Stream Simulator
+            </Typography>
+            <ConnectionStatus />
+            <ThemeToggle />
+          </Toolbar>
+        </AppBar>
+
+        {/* Main Content */}
+        <Container
+          maxWidth={false}
+          sx={{
+            flexGrow: 1,
+            py: 3,
+            px: { xs: 2, sm: 3 }
+          }}
+        >
+          <Navigation />
+          {renderCurrentView()}
+        </Container>
+
+        {/* Error Snackbar */}
+        <Snackbar
+          open={!!error}
+          autoHideDuration={5000}
+          onClose={() => actions.setError(null)}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        >
+          <Alert
+            onClose={() => actions.setError(null)}
+            severity="error"
+            variant="filled"
+            sx={{ width: '100%' }}
+          >
+            {error}
+          </Alert>
+        </Snackbar>
+      </Box>
+    </ThemeProvider>
   );
 };
 

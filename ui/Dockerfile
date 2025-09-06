@@ -19,8 +19,9 @@ RUN npm run build
 # Production stage with Nginx
 FROM nginx:1.25-alpine
 
-# Create non-root user and group
-RUN addgroup -g 1001 appuser && \
+# Install wget for health checks and create non-root user and group
+RUN apk add --no-cache wget && \
+    addgroup -g 1001 appuser && \
     adduser -S -u 1001 -G appuser appuser
 
 # Copy custom nginx configuration
@@ -42,7 +43,7 @@ EXPOSE 3000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1
+    CMD wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1
 
 # Start Nginx
 CMD ["nginx", "-g", "daemon off;"]

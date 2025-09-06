@@ -1,0 +1,51 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kafka-config
+  namespace: kafka-stream-sim
+  labels:
+    app: kafka-stream-sim
+data:
+  # Zookeeper Configuration
+  ZOOKEEPER_CLIENT_PORT: "2181"
+  ZOOKEEPER_TICK_TIME: "2000"
+  ZOOKEEPER_SYNC_LIMIT: "2"
+  
+  # Kafka Configuration
+  KAFKA_BROKER_ID: "1"
+  KAFKA_ZOOKEEPER_CONNECT: "zookeeper-service:2181"
+  KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT"
+  KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka-service:29092,PLAINTEXT_HOST://kafka-service:9092"
+  KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
+  KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: "0"
+  KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+  KAFKA_DELETE_TOPIC_ENABLE: "true"
+  KAFKA_LOG_RETENTION_HOURS: "168"
+  KAFKA_LOG_SEGMENT_BYTES: "1073741824"
+  KAFKA_LOG_RETENTION_CHECK_INTERVAL_MS: "300000"
+  KAFKA_MESSAGE_MAX_BYTES: "1000000"
+  KAFKA_REPLICA_FETCH_MAX_BYTES: "1048576"
+  KAFKA_NUM_PARTITIONS: "3"
+  
+  # Application Configuration
+  KAFKA_BOOTSTRAP_SERVERS: "kafka-service:29092"
+  KAFKA_TOPIC: "stock_ticks"
+  KAFKA_GROUP_ID: "stock_tick_consumers"
+  PRODUCER_INTERVAL: "1.5"
+  LOG_LEVEL: "INFO"
+  
+  # WebSocket Bridge Configuration
+  WEBSOCKET_PORT: "8080"
+  CORS_ORIGIN: "*"
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ui-config
+  namespace: kafka-stream-sim
+  labels:
+    app: kafka-stream-sim
+data:
+  REACT_APP_WEBSOCKET_URL: "ws://websocket-bridge-service:8080"
+  REACT_APP_API_URL: "http://websocket-bridge-service:8080"

@@ -266,10 +266,20 @@ export const safeParseString = (value: unknown, fallback: string = ''): string =
   if (typeof value === 'string') {
     return value;
   }
-  
+
   if (value !== null && value !== undefined) {
     return String(value);
   }
-  
+
   return fallback;
+};
+
+// Additional formatters for new components
+export const formatCurrency = formatPrice; // Alias for consistency
+export const formatNumber = formatLargeNumber; // Alias for consistency
+export const formatPercent = (value: number): string => {
+  if (typeof value !== 'number' || isNaN(value)) {
+    return '0.00%';
+  }
+  return `${value.toFixed(2)}%`;
 };
