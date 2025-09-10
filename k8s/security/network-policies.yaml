@@ -1,0 +1,313 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: kafka-stream-sim
+  labels:
+    app: kafka-stream-sim
+    component: security
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns
+  namespace: kafka-stream-sim
+  labels:
+    app: kafka-stream-sim
+    component: security
+spec:
+  podSelector: {}
+  policyTypes:
+  - Egress
+  egress:
+  - to: []
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: zookeeper-network-policy
+  namespace: kafka-stream-sim
+  labels:
+    app: zookeeper
+    component: security
+spec:
+  podSelector:
+    matchLabels:
+      app: zookeeper
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow Kafka to connect to Zookeeper
+  - from:
+    - podSelector:
+        matchLabels:
+          app: kafka
+    ports:
+    - protocol: TCP
+      port: 2181
+  # Allow Zookeeper cluster communication
+  - from:
+    - podSelector:
+        matchLabels:
+          app: zookeeper
+    ports:
+    - protocol: TCP
+      port: 2888
+    - protocol: TCP
+      port: 3888
+  egress:
+  # Allow Zookeeper cluster communication
+  - to:
+    - podSelector:
+        matchLabels:
+          app: zookeeper
+    ports:
+    - protocol: TCP
+      port: 2888
+    - protocol: TCP
+      port: 3888
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: kafka-network-policy
+  namespace: kafka-stream-sim
+  labels:
+    app: kafka
+    component: security
+spec:
+  podSelector:
+    matchLabels:
+      app: kafka
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow producers and consumers to connect
+  - from:
+    - podSelector:
+        matchLabels:
+          app: producer
+    - podSelector:
+        matchLabels:
+          app: consumer
+    ports:
+    - protocol: TCP
+      port: 9092
+  # Allow Kafka cluster communication
+  - from:
+    - podSelector:
+        matchLabels:
+          app: kafka
+    ports:
+    - protocol: TCP
+      port: 9092
+    - protocol: TCP
+      port: 9093
+  # Allow monitoring
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - protocol: TCP
+      port: 9308
+    - protocol: TCP
+      port: 9999
+  egress:
+  # Allow connection to Zookeeper
+  - to:
+    - podSelector:
+        matchLabels:
+          app: zookeeper
+    ports:
+    - protocol: TCP
+      port: 2181
+  # Allow Kafka cluster communication
+  - to:
+    - podSelector:
+        matchLabels:
+          app: kafka
+    ports:
+    - protocol: TCP
+      port: 9092
+    - protocol: TCP
+      port: 9093
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: producer-network-policy
+  namespace: kafka-stream-sim
+  labels:
+    app: producer
+    component: security
+spec:
+  podSelector:
+    matchLabels:
+      app: producer
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow monitoring
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - protocol: TCP
+      port: 8080
+  egress:
+  # Allow connection to Kafka
+  - to:
+    - podSelector:
+        matchLabels:
+          app: kafka
+    ports:
+    - protocol: TCP
+      port: 9092
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: consumer-network-policy
+  namespace: kafka-stream-sim
+  labels:
+    app: consumer
+    component: security
+spec:
+  podSelector:
+    matchLabels:
+      app: consumer
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow WebSocket bridge to connect
+  - from:
+    - podSelector:
+        matchLabels:
+          app: websocket-bridge
+    ports:
+    - protocol: TCP
+      port: 8080
+  # Allow monitoring
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - protocol: TCP
+      port: 8080
+  egress:
+  # Allow connection to Kafka
+  - to:
+    - podSelector:
+        matchLabels:
+          app: kafka
+    ports:
+    - protocol: TCP
+      port: 9092
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: websocket-bridge-network-policy
+  namespace: kafka-stream-sim
+  labels:
+    app: websocket-bridge
+    component: security
+spec:
+  podSelector:
+    matchLabels:
+      app: websocket-bridge
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow UI to connect
+  - from:
+    - podSelector:
+        matchLabels:
+          app: ui
+    ports:
+    - protocol: TCP
+      port: 8080
+  # Allow ingress controller
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 8080
+  # Allow monitoring
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - protocol: TCP
+      port: 8080
+  egress:
+  # Allow connection to consumer
+  - to:
+    - podSelector:
+        matchLabels:
+          app: consumer
+    ports:
+    - protocol: TCP
+      port: 8080
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ui-network-policy
+  namespace: kafka-stream-sim
+  labels:
+    app: ui
+    component: security
+spec:
+  podSelector:
+    matchLabels:
+      app: ui
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow ingress controller
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 80
+  egress:
+  # Allow connection to WebSocket bridge
+  - to:
+    - podSelector:
+        matchLabels:
+          app: websocket-bridge
+    ports:
+    - protocol: TCP
+      port: 8080

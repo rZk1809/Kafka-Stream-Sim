@@ -70,7 +70,7 @@ export interface AppState {
   marketSummary: MarketSummary;
   historicalData: Record<string, HistoricalData>;
   theme: 'light' | 'dark';
-  currentView: 'dashboard' | 'trading' | 'portfolio' | 'alerts' | 'history';
+  currentView: 'dashboard' | 'trading' | 'portfolio' | 'alerts' | 'history' | 'volume';
 }
 
 // Time range for charts
@@ -116,7 +116,7 @@ export type AppAction =
   | { type: 'UPDATE_MARKET_SUMMARY'; payload: MarketSummary }
   | { type: 'SET_HISTORICAL_DATA'; payload: { symbol: string; data: HistoricalData } }
   | { type: 'SET_THEME'; payload: 'light' | 'dark' }
-  | { type: 'SET_CURRENT_VIEW'; payload: 'dashboard' | 'trading' | 'portfolio' | 'alerts' | 'history' };
+  | { type: 'SET_CURRENT_VIEW'; payload: 'dashboard' | 'trading' | 'portfolio' | 'alerts' | 'history' | 'volume' };
 
 // Theme configuration
 export interface ThemeConfig {

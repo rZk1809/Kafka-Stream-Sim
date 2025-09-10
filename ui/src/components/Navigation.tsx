@@ -13,7 +13,7 @@ import {
   AccountBalance,
   NotificationsActive,
   ShowChart,
-  History
+  BarChart
 } from '@mui/icons-material';
 import { useAppContext } from '../context/AppContext';
 
@@ -62,6 +62,12 @@ const Navigation: React.FC<NavigationProps> = ({ className }) => {
       value: 'history',
       label: 'History',
       icon: <ShowChart />,
+      badge: null
+    },
+    {
+      value: 'volume',
+      label: 'Volume',
+      icon: <BarChart />,
       badge: null
     }
   ];

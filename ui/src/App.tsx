@@ -19,6 +19,9 @@ import PortfolioView from './components/PortfolioView';
 import Navigation from './components/Navigation';
 import ThemeToggle from './components/ThemeToggle';
 import ConnectionStatus from './components/ConnectionStatus';
+import MarketAlerts from './components/MarketAlerts';
+import HistoricalCharts from './components/HistoricalCharts';
+import VolumeAnalysis from './components/VolumeAnalysis';
 
 const App: React.FC = () => {
   const { state, actions } = useAppContext();
@@ -70,9 +73,11 @@ const App: React.FC = () => {
       case 'portfolio':
         return <PortfolioView />;
       case 'alerts':
-        return <div>Alerts View (Coming Soon)</div>;
+        return <MarketAlerts />;
       case 'history':
-        return <div>Historical Data View (Coming Soon)</div>;
+        return <HistoricalCharts />;
+      case 'volume':
+        return <VolumeAnalysis />;
       case 'dashboard':
       default:
         return <Dashboard />;

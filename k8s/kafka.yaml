@@ -23,9 +23,7 @@ spec:
         image: confluentinc/cp-kafka:7.4.0
         ports:
         - containerPort: 9092
-          name: external
-        - containerPort: 29092
-          name: internal
+          name: kafka
         - containerPort: 9101
           name: jmx
         env:
@@ -44,6 +42,11 @@ spec:
             configMapKeyRef:
               name: kafka-config
               key: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
+        - name: KAFKA_LISTENERS
+          valueFrom:
+            configMapKeyRef:
+              name: kafka-config
+              key: KAFKA_LISTENERS
         - name: KAFKA_ADVERTISED_LISTENERS
           valueFrom:
             configMapKeyRef:
@@ -149,13 +152,9 @@ spec:
     app: kafka-stream-sim
     component: kafka
   ports:
-  - name: external
+  - name: kafka
     port: 9092
     targetPort: 9092
-    protocol: TCP
-  - name: internal
-    port: 29092
-    targetPort: 29092
     protocol: TCP
   - name: jmx
     port: 9101

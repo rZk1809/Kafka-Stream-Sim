@@ -3,7 +3,61 @@
 # Kafka Stream Simulator Kubernetes Deployment Script
 set -e
 
+# Configuration
+PRODUCTION=false
+MONITORING=false
+AUTOSCALING=false
+SECURITY=false
+INGRESS=false
+
+# Function to show usage
+show_usage() {
+    echo "Usage: $0 [OPTIONS]"
+    echo "Options:"
+    echo "  --production     Deploy with production configuration"
+    echo "  --monitoring     Enable monitoring (Prometheus/Grafana)"
+    echo "  --autoscaling    Enable horizontal pod autoscaling"
+    echo "  --security       Enable security features (RBAC, Network Policies)"
+    echo "  --ingress        Deploy ingress configuration"
+    echo "  --help           Show this help message"
+    exit 1
+}
+
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --production)
+            PRODUCTION=true
+            shift
+            ;;
+        --monitoring)
+            MONITORING=true
+            shift
+            ;;
+        --autoscaling)
+            AUTOSCALING=true
+            shift
+            ;;
+        --security)
+            SECURITY=true
+            shift
+            ;;
+        --ingress)
+            INGRESS=true
+            shift
+            ;;
+        --help)
+            show_usage
+            ;;
+        *)
+            echo "❌ Unknown option: $1"
+            show_usage
+            ;;
+    esac
+done
+
 echo "🚀 Starting Kafka Stream Simulator deployment to Kubernetes..."
+echo "📋 Configuration: Production=$PRODUCTION, Monitoring=$MONITORING, Autoscaling=$AUTOSCALING, Security=$SECURITY, Ingress=$INGRESS"
 
 # Check if kubectl is available
 if ! command -v kubectl &> /dev/null; then
@@ -71,6 +125,28 @@ kubectl apply -f ui.yaml
 echo "⏳ Waiting for UI to be ready..."
 kubectl wait --for=condition=available --timeout=300s deployment/ui -n kafka-stream-sim
 
+# Deploy optional components based on flags
+if [ "$SECURITY" = true ]; then
+    echo "🔒 Deploying security components..."
+    kubectl apply -f security/rbac.yaml
+    kubectl apply -f security/network-policies.yaml
+fi
+
+if [ "$MONITORING" = true ]; then
+    echo "📊 Deploying monitoring components..."
+    kubectl apply -f monitoring/servicemonitor.yaml
+fi
+
+if [ "$AUTOSCALING" = true ]; then
+    echo "📈 Deploying autoscaling components..."
+    kubectl apply -f hpa/producer-hpa.yaml
+fi
+
+if [ "$INGRESS" = true ]; then
+    echo "🌐 Deploying ingress configuration..."
+    kubectl apply -f ingress.yaml
+fi
+
 echo "🎉 Deployment completed successfully!"
 
 # Show status
@@ -83,11 +159,29 @@ kubectl get services -n kafka-stream-sim
 echo "💾 Persistent Volume Claims:"
 kubectl get pvc -n kafka-stream-sim
 
+if [ "$INGRESS" = true ]; then
+    echo "🌐 Ingress:"
+    kubectl get ingress -n kafka-stream-sim
+fi
+
+if [ "$AUTOSCALING" = true ]; then
+    echo "📈 Horizontal Pod Autoscalers:"
+    kubectl get hpa -n kafka-stream-sim
+fi
+
 echo ""
-echo "🔗 To access the UI, run:"
-echo "kubectl port-forward service/ui-service 3000:3000 -n kafka-stream-sim"
-echo "Then open http://localhost:3000 in your browser"
+if [ "$INGRESS" = true ]; then
+    echo "🔗 Access the application via ingress (configure DNS/hosts file):"
+    echo "https://kafka-stream-sim.example.com"
+else
+    echo "🔗 To access the UI, run:"
+    echo "kubectl port-forward service/ui-service 3000:80 -n kafka-stream-sim"
+    echo "Then open http://localhost:3000 in your browser"
+fi
 
 echo ""
 echo "🔗 To access WebSocket Bridge, run:"
 echo "kubectl port-forward service/websocket-bridge-service 8080:8080 -n kafka-stream-sim"
+
+echo ""
+echo "📖 For more information, see k8s/DEPLOYMENT_GUIDE.md"
